@@ -8,7 +8,6 @@ from PIL import ImageOps
 from PyPDF2 import PdfFileMerger
 from tkinter import *
 from tkinter import filedialog as fd, messagebox
-from pikepdf import _cpphelpers
 
 # Main window setup
 root = tk.Tk()
@@ -46,57 +45,72 @@ header_style = {
 
 
 def get_dir_name():
-    global dir_name
     dir_name = fd.askdirectory(mustexist=True)
-    dir_name = os.path.normpath(dir_name)
-    return dir_name
+    return os.path.normpath(dir_name)
+
+
+def is_valid_file(file_name, extensions):
+    """Checks if the file has a valid extension."""
+    return file_name.lower().endswith(extensions)
 
 
 def convert_jpg_to_pdf():
     dir_name = get_dir_name()
+    if not dir_name:
+        return
+    original_dir = os.getcwd()
     os.chdir(dir_name)
-    with open(f"New File.pdf", "wb") as f:
-        imgs = []
-        for file_name in os.listdir(dir_name):
-            if file_name.endswith((".jpg", ".JPG")):
-                path = os.path.join(dir_name, file_name)
-                imgs.append(path)
-        try:
-            f.write(img2pdf.convert(imgs))
+    try:
+        imgs = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if is_valid_file(f, (".jpg", ".jpeg"))]
+        if imgs:
+            with open("New File.pdf", "wb") as f:
+                f.write(img2pdf.convert(imgs))
             messagebox.showinfo(title="Success", message='"New File.pdf" created successfully.')
-        except Exception as e:
-            print(e)
-            messagebox.showerror(title="Error", message="No JPG files found or folder not selected.")
+        else:
+            messagebox.showerror(title="Error", message="No JPG files found.")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"An error occurred: {e}")
+    finally:
+        os.chdir(original_dir)
 
 
 def compress_jpg():
     dir_name = get_dir_name()
-    if dir_name == ".":
-        messagebox.showerror(title="Error", message="No folder selected.")
-    else:
+    if not dir_name:
+        return
+    try:
         for file_name in os.listdir(dir_name):
-            if file_name.endswith((".jpg", ".JPG")):
+            if is_valid_file(file_name, (".jpg", ".jpeg")):
                 path = os.path.join(dir_name, file_name)
-                img = PIL.Image.open(path)
-                img = img.resize(img.size, PIL.Image.ANTIALIAS)
-                img = ImageOps.exif_transpose(img)
-                img.save(path)
+                with PIL.Image.open(path) as img:
+                    img = ImageOps.exif_transpose(img)
+                    img.save(path, quality=85, optimize=True)
         messagebox.showinfo(title="Success", message="JPG files compressed successfully.")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"An error occurred: {e}")
 
 
 def merge_pdf():
     dir_name = get_dir_name()
-    if dir_name == ".":
-        messagebox.showerror(title="Error", message="No folder selected.")
-    else:
-        os.chdir(dir_name)
+    if not dir_name:
+        return
+    original_dir = os.getcwd()
+    os.chdir(dir_name)
+    try:
         merger = PdfFileMerger()
-        for file_name in os.listdir(dir_name):
-            if file_name.endswith(".pdf"):
-                merger.append(os.path.join(dir_name, file_name))
-        merger.write(f"Merged File.pdf")
+        pdf_files = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if is_valid_file(f, ".pdf")]
+        if pdf_files:
+            for pdf in pdf_files:
+                merger.append(pdf)
+            merger.write("Merged File.pdf")
+            messagebox.showinfo(title="Success", message='"Merged File.pdf" created successfully.')
+        else:
+            messagebox.showerror(title="Error", message="No PDF files found.")
+    except Exception as e:
+        messagebox.showerror(title="Error", message=f"An error occurred: {e}")
+    finally:
         merger.close()
-        messagebox.showinfo(title="Success", message='"Merged File.pdf" created successfully.')
+        os.chdir(original_dir)
 
 
 def jpg_to_pdf_compress():
