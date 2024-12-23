@@ -5,7 +5,7 @@ import tkinter as tk
 
 from PIL import Image
 from PIL import ImageOps
-from PyPDF2 import PdfFileMerger
+from PyPDF2 import PdfFileMerger 
 from tkinter import *
 from tkinter import filedialog as fd, messagebox
 
