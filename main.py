@@ -9,7 +9,7 @@ from PyPDF2 import PdfFileMerger
 from tkinter import *
 from tkinter import filedialog as fd, messagebox
 
-# Main window setup
+# Main window setup 
 root = tk.Tk()
 root['bg'] = "#fff8e1"
 root.title("PDF and JPG Tool for SAT")
